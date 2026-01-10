@@ -167,10 +167,15 @@ This approach significantly reduces forensic artifacts and avoids persistent Pow
 making detection more difficult for traditional security controls.
 
 **Example usage via C2:**
-
+```bash
 ps whoami
+```
+```bash
 ps net user
+```
+```bash
 ps schtasks /query
+```
 
 
 All commands are executed silently without any visible window or user interaction.
