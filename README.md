@@ -146,6 +146,37 @@ The framework is composed of **three main components**:
 
 ---
 
+
+### Living-off-the-Land PowerShell Command Execution
+
+The C2 agent supports **stealth, one-shot PowerShell command execution** using native Windows binaries
+(Living-off-the-Land technique).
+
+Instead of maintaining an interactive PowerShell session or dropping `.ps1` scripts to disk, the agent
+spawns a temporary PowerShell process for each command using:
+
+- `-NoProfile`
+- `-NonInteractive`
+- `-ExecutionPolicy Bypass`
+- Hidden window execution
+
+Each PowerShell command is executed in an isolated, short-lived process, and the output is captured and
+returned directly to the Command & Control channel.
+
+This approach significantly reduces forensic artifacts and avoids persistent PowerShell sessions,
+making detection more difficult for traditional security controls.
+
+**Example usage via C2:**
+
+ps whoami
+ps net user
+ps schtasks /query
+
+
+All commands are executed silently without any visible window or user interaction.
+
+---
+
 ## 8. Persistence & Privilege Level
 
 - Runs as **SYSTEM**
