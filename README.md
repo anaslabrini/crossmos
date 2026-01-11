@@ -14,6 +14,7 @@ This project is developed **strictly for educational purposes, Red Team operatio
 The author takes no responsibility for misuse.
 
 ---
+CROSSMOS[cross.png]
 
 ## 1. Project Overview
 
