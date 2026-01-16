@@ -1,5 +1,5 @@
 
-# C2TA – USB-Based Red Team Attack Framework
+# CROSSMOS – USB-Based Red Team Attack Framework
 **Author:** Anas Labrini  
 **Category:** Red Team / Adversary Simulation / Malware Research  
 **Language:** C (DigiSpark), PowerShell, Python  
@@ -18,7 +18,7 @@ The author takes no responsibility for misuse.
 
 ## 1. Project Overview
 
-**C2TA** is a multi-stage Red Team attack framework that demonstrates how modern attacks can be executed **without exploiting software vulnerabilities**, relying instead on:
+**CROSSMOS** is a multi-stage Red Team attack framework that demonstrates how modern attacks can be executed **without exploiting software vulnerabilities**, relying instead on:
 
 - Human trust
 - Default OS behaviors
@@ -43,7 +43,7 @@ The framework simulates a **real-world attack chain** starting from a USB device
       ↓
 [Persistent SYSTEM Scheduled Task]
       ↓
-[c2ta.py Agent]
+[CROSSMOS.py Agent]
       ↓
 [Telegram Command & Control]
 ```
@@ -58,7 +58,7 @@ The framework is composed of **three main components**:
 |---------|-----|
 | DigiSpark Payload | Initial Access (HID Injection) |
 | script.ps1 | Stage-2 Loader & Persistence |
-| c2ta.py | Persistent C2 Agent (RAT) |
+| CROSSMOS.py | Persistent C2 Agent (RAT) |
 
 ---
 
@@ -89,7 +89,7 @@ The framework is composed of **three main components**:
 - Creates a working directory in `C:\ProgramData`
 - Downloads:
   - Portable Python runtime
-  - Main C2 agent (`c2ta.py`)
+  - Main C2 agent (`CROSSMOS.py`)
 - Uses trusted infrastructure (GitHub Releases)
 
 ### Persistence Mechanism
@@ -105,10 +105,10 @@ The framework is composed of **three main components**:
 
 ---
 
-## 6. Stage 3 – Command & Control Agent (c2ta.py)
+## 6. Stage 3 – Command & Control Agent (CROSSMOS.py)
 
 ### Description
-`c2ta.py` is a **Telegram-based Remote Access Tool (RAT)** that provides full interactive control over the compromised system.
+`CROSSMOS.py` is a **Telegram-based Remote Access Tool (RAT)** that provides full interactive control over the compromised system.
 
 ### Why Telegram?
 - Encrypted TLS traffic
@@ -239,6 +239,6 @@ GitHub: https://github.com/anaslabrini
 
 ## 13. Final Notes
 
-C2TA demonstrates how **simple components, when chained correctly**, can result in a **powerful and stealthy attack framework**.
+CROSSMOS demonstrates how **simple components, when chained correctly**, can result in a **powerful and stealthy attack framework**.
 
 Understanding such tools is critical for building stronger defenses.
