@@ -42,31 +42,39 @@ The author takes no responsibility for misuse.
 | **winmon.py** | 👁️ Watchdog Guardian (حارس الاستمرارية) | Memory / WinExec |
 
 ---
+## 📝 File Analysis — `script.ps1`
 
-## 🏗️ Architecture Logic
-
-```text
-script.ps1
-    │
-    ▼
-wincore.py (C2 Client)
-    │
-    ├── winexec.py (Payload Execution Layer)
-    │       ├── windef.py (Defense Evasion Layer)
-    │       └── winmon.py (Self-Healing Watchdog)
-    │
-    └── syskey.py (Activity Monitoring Layer)
-
-## 12. Author
-
-**Anas Labrini**  
-Red Team | Malware Research | Adversary Simulation  
-GitHub: https://github.com/anaslabrini
+> **Role:** Initializer / Installer  
+> **Purpose:** Sets up core environment, downloads main components, and ensures persistence.
 
 ---
 
-## 13. Final Notes
+### 📂 Functional Overview
 
-CROSSMOS demonstrates how **simple components, when chained correctly**, can result in a **powerful and stealthy attack framework**.
+`script.ps1` هو **نقطة الدخول الأولية** للنظام ويقوم بالوظائف التالية:
 
-Understanding such tools is critical for building stronger defenses.
+- إنشاء مجلد أساسي: `C:\ProgramData\WinCore`  
+- تنزيل الملفات الرئيسية من الإنترنت:
+  - `pywin.exe` → Executable Loader
+  - `wincore.py` → C2 Client  
+- إنشاء **مهمة مجدولة** تعمل عند بدء النظام (`OnStart`) بصلاحية **SYSTEM**  
+- تشغيل المهمة مباشرة بعد إنشائها لضمان التشغيل الفوري
+
+> هذا الملف **يمثل البداية**، ويعد الرابط بين تنزيل الملفات وتشغيلها بشكل دائم عند الإقلاع.
+
+---
+
+### 🛠️ Techniques & Methods Used
+
+| 🔹 Technique | 🔹 Purpose |
+|--------------|------------|
+| `New-Item -ItemType Directory` | إنشاء مجلد بيئة العمل الأساسي |
+| `Invoke-WebRequest` | تنزيل الملفات من GitHub Releases |
+| `Test-Path` | التحقق من وجود الملفات لتجنب إعادة التحميل |
+| `schtasks /create` | إنشاء Scheduled Task للاستمرارية |
+| `schtasks /run` | تشغيل المهمة فور إنشائها |
+| Backtick Escaping (`) | تمرير المسارات والملفات داخل الأمر بصيغة صحيحة |
+
+---
+
+### 🔗 Relationship with Other Modules
