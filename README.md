@@ -1,4 +1,4 @@
-# CROSSMOS – USB-Based Red Team Attack Framework
+# 👹 CROSSMOS – USB-Based Red Team Attack Framework
 **Author:** Anas Labrini  
 **Category:** Red Team / Adversary Simulation / Malware Research  
 **Language:** C (DigiSpark), PowerShell, Python  
@@ -6,7 +6,7 @@
 
 ---
 
-## ⚠️ Disclaimer
+##  Disclaimer
 This project is developed **strictly for educational purposes, Red Team operations, malware research, and adversary simulation in controlled lab environments**.
 
 **Unauthorized use against systems you do not own or have explicit permission to test is illegal.**  
@@ -18,38 +18,38 @@ The author takes no responsibility for misuse.
 
 ---
 
-## 🛡️ Windows Core Framework
+##  Windows Core Framework
 
 > Modular Windows Operational Architecture  
 > Structured, Persistent & Memory-Oriented Components
 
 ---
 
-## 📦 Project Structure
+##  Project Structure
 
 The system consists of multiple interconnected modules, each with a defined functional role and execution path.
 
 ---
 
-## 🗂️ Components Overview
+##  Components Overview
 
-| 🧩 File Name | 🎯 Functional Role | 📁 Default Path |
+|  File Name |  Functional Role |  Default Path |
 |--------------|------------------|----------------|
-| **script.ps1** | 🔧 Installer (Initial Setup) | One-time execution |
-| **wincore.py** | 🧠 C2 Client (Command & Control Engine) | `C:\ProgramData\WinCore\` |
-| **winexec.py** | ⚔️ Payload Executor | `C:\ProgramData\WinExec\` |
-| **syskey.py** | ⌨️ Activity Monitor / Keylogger | `C:\ProgramData\SysKey\` |
-| **windef.py** | 🛰️ Anti-AV Radar / Security Monitor | Memory / WinExec |
-| **winmon.py** | 👁️ Watchdog Guardian / Tamper Alert | Memory / WinExec |
+| **script.ps1** |  Installer (Initial Setup) | One-time execution |
+| **wincore.py** |  C2 Client (Command & Control Engine) | `C:\ProgramData\WinCore\` |
+| **winexec.py** |  Payload Executor | `C:\ProgramData\WinExec\` |
+| **syskey.py** |  Activity Monitor / Keylogger | `C:\ProgramData\SysKey\` |
+| **windef.py** |  Anti-AV Radar / Security Monitor | Memory / WinExec |
+| **winmon.py** |  Watchdog Guardian / Tamper Alert | Memory / WinExec |
 
 ---
 
-## 📝 File Analysis — `script.ps1`
+##  File Analysis — `script.ps1`
 
 > **Role:** Initializer / Installer  
 > **Purpose:** Sets up core environment, downloads main components, and ensures persistence.
 
-### 📂 Functional Overview
+###  Functional Overview
 
 `script.ps1` serves as the **initial entry point**, performing:
 
@@ -62,9 +62,9 @@ The system consists of multiple interconnected modules, each with a defined func
 
 > Represents the bridge between downloading the files and ensuring persistent execution.
 
-### 🛠️ Techniques & Methods Used
+###  Techniques & Methods Used
 
-| 🔹 Technique | 🔹 Purpose |
+|  Technique |  Purpose |
 |--------------|------------|
 | `New-Item -ItemType Directory` | Create base environment folder |
 | `Invoke-WebRequest` | Download files from GitHub Releases |
@@ -75,11 +75,11 @@ The system consists of multiple interconnected modules, each with a defined func
 
 ---
 
-## 📝 File Analysis — `wincore.py`
+##  File Analysis — `wincore.py`
 
 > **Role:** Execution / C2 Client
 
-### 🔴 1️⃣ Command & Control (C2)
+### 1 - Command & Control (C2)
 
 - Technology: Telegram Bot API  
 - Long polling: `ApplicationBuilder().run_polling()`  
@@ -95,7 +95,7 @@ The system consists of multiple interconnected modules, each with a defined func
 
 > Low-noise C2 leveraging legitimate platform (Living-off-the-Land).
 
-### 🔴 2️⃣ Persistence Mechanism
+### 2 - Persistence Mechanism
 
 - Scheduled Task via PowerShell  
 - RunLevel: Highest, AtLogOn Trigger  
@@ -106,7 +106,7 @@ The system consists of multiple interconnected modules, each with a defined func
 
 > Common persistence via Task Scheduler.
 
-### 🔴 3️⃣ Defense Evasion
+### 3 - Defense Evasion
 
 - **PowerShell Logging Disable:** Registry modifications for ScriptBlockLogging  
 - **Timestomping:** `os.utime` + Windows API (`SetFileTime`) → Creation/Access/Modified timestamps, historical dates 2017–2019  
@@ -116,47 +116,47 @@ The system consists of multiple interconnected modules, each with a defined func
 - **USN Journal Deletion:** `fsutil usn deletejournal /D C:`  
 - **VSS Shadow Deletion:** `vssadmin delete shadows /all /quiet`
 
-### 🔴 4️⃣ Privilege Manipulation
+### 4 - Privilege Manipulation
 
 - Enable `SeDebugPrivilege`  
 - `OpenProcessToken` → `LookupPrivilegeValueW` → `AdjustTokenPrivileges`  
 
 > Allows interaction with system-level processes.
 
-### 🔴 5️⃣ Self-Destruction
+### 5 - Self-Destruction
 
 - `initiate_final_purge()`  
 - Layered destruction: file corruption, overwrite headers, random overwrite, truncate, rename, kill processes, clear logs, remove directories, process suicide (`os._exit`)  
 
-### 🔴 6️⃣ Credential Access
+### 6 - Credential Access
 
 - Chrome Master Key extraction: `Local State` → Base64 decode → DPAPI prefix removal → `CryptUnprotectData`  
 - AES GCM decryption of passwords  
 
-### 🔴 7️⃣ Surveillance Capabilities
+### 7 - Surveillance Capabilities
 
 - Screenshot: full & active window (`PIL.ImageGrab`)  
 - GPS / System.Device.Location / IP API fallback  
 - Network scanning: ping, port (80,443,445,3389), subnet sweep, `netsh wlan show networks`  
 
-### 🔴 8️⃣ File & System Control
+### 8 - File & System Control
 
 - Commands: `ls`, `cd`, `mkdir`, `rm`, `rmdir`, `copy`, `move`, `rename`, `hash (SHA256)`, `cat`, `preview`, `process list/kill`, `restart/shutdown`, `disable sleep`, `environment dump`, `public IP`, `uptime`, file upload/download, zip folder exfiltration  
 
-### 🔴 9️⃣ Memory Management & Concealment
+### 9 - Memory Management & Concealment
 
 - Garbage collection forcing  
 - Memory watchdog  
 - Executor thread pool  
 - Non-blocking architecture  
 
-### 🔴 🔟 Infrastructure Resilience
+### 10 - Infrastructure Resilience
 
 - Restore mechanism from GitHub  
 - Recreate `winpy.exe` from `pywin.exe`  
 - Basic content verification  
 
-### 🧬 11️⃣ Multi-Agent Architecture
+### 11 - Multi-Agent Architecture
 
 - `AGENT_ID` (UUID short)  
 - `ACTIVE_AGENT_ID`  
@@ -164,7 +164,7 @@ The system consists of multiple interconnected modules, each with a defined func
 
 ---
 
-## 📝 File Analysis — `winexec.py`
+##  File Analysis — `winexec.py`
 
 - **Browser Password Theft:** Chrome / Edge SQLite DB, AES Master Key, DPAPI (`win32crypt`), AES GCM decryption  
 - **WiFi Profile Extraction:** `netsh wlan show profile key=clear` via subprocess  
@@ -188,7 +188,7 @@ The system consists of multiple interconnected modules, each with a defined func
 
 ---
 
-## 📝 File Analysis — `winmon.py`
+##  File Analysis — `winmon.py`
 
 - **Purpose:** Infrastructure protection & tamper alert  
 - **Communication:** Telegram Bot API → HTTPS → token hardcoded  
@@ -199,7 +199,7 @@ The system consists of multiple interconnected modules, each with a defined func
 
 ---
 
-## 📝 File Analysis — `windef.py`
+##  File Analysis — `windef.py`
 
 - **Purpose:** Blue-Team / EDR Awareness & Environment Monitor  
 - **Monitoring:** `psutil.process_iter(['name'])` → baseline & real-time scanning  
@@ -212,7 +212,7 @@ The system consists of multiple interconnected modules, each with a defined func
 
 ---
 
-## 📝 File Analysis — `syskey.py`
+##  File Analysis — `syskey.py`
 
 - **Role:** Context-Aware Keylogger + Active Window Intelligence + Structured Exfiltration  
 - **Elevation:** UAC prompt for Admin if not elevated  
@@ -227,7 +227,7 @@ The system consists of multiple interconnected modules, each with a defined func
 
 ---
 
-## 🔗 Relationship with Other Modules
+##  Relationship with Other Modules
 
 | Module | Role within Architecture |
 |--------|------------------------|
