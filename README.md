@@ -227,6 +227,140 @@ The system consists of multiple interconnected modules, each with a defined func
 
 ---
 
+##  Advanced Evasion, Protection & Self-Destruction Layer
+
+> Classification: Defense Evasion / Anti-Analysis / Secure Cleanup  
+> Scope: Memory, Disk, Processes, Logs, Execution Flow  
+> Operational Mode: Autonomous / Conditional / Event-Driven  
+
+---
+
+###  1. Autonomous Self-Destruction Protocol
+
+[TRIGGERED] → Full System Sanitization → Zero Artifact Persistence
+
+Overview:  
+Implements a multi-layer secure wipe protocol designed to eliminate all operational traces across filesystem, memory artifacts, logs, and recovery mechanisms.
+
+Trigger Vectors:
+- Manual operator command (self-delete)
+- Anti-VM / Sandbox detection
+- Integrity violation or tampering attempt
+- Forensic / analysis tool detection
+
+Execution Flow:
+Kill Processes → Destroy Backups → Wipe Logs → Shred Files → Clean Registry → Sanitize Disk
+
+Capabilities:
+- Deep process tree termination (forced kill)
+- Shadow Copies deletion (anti-recovery)
+- Event Logs purge (Security / System / PowerShell / Sysmon)
+- Secure file shredding (random overwrite + timestomp)
+- Registry artifact cleanup (UserAssist / MuiCache / Services)
+- Prefetch & PowerShell history wipe
+- SSD TRIM enforcement (slack space sanitization)
+- Pagefile wipe on reboot
+
+Techniques:
+- wevtutil cl
+- vssadmin delete shadows
+- Optimize-Volume -ReTrim
+- Random Byte Overwrite (Shredding)
+- Registry Traversal & Purge
+
+---
+
+###  2. Advanced Anti-VM & Sandbox Detection Engine
+
+[ENVIRONMENT SCORING ENGINE] → [Threshold Evaluation] → [EXECUTE or SELF-DESTRUCT]
+
+Overview:  
+A heuristic-based detection engine leveraging hardware, timing, and behavioral indicators to identify virtualized or sandboxed environments.
+
+Detection Vectors:
+- ACPI Firmware Inspection (VMware / VirtualBox / QEMU / Hyper-V)
+- Timing Analysis (execution anomalies)
+- MAC Address Profiling (VM OUIs)
+- System Age Heuristics (sandbox detection)
+
+Scoring Model:
+Weighted Heuristics → Score → Threshold ≥ 50 → VM Detected
+
+Response:
+- Execute destruction routine
+- Silent termination
+
+---
+
+###  3. Real-Time Integrity & Anti-Tamper Monitoring
+
+[FILE WATCHER] + [PROCESS MONITOR] → [ANOMALY DETECTED] → [SELF-DESTRUCT]
+
+Overview:  
+Continuous monitoring layer enforcing strict execution integrity and preventing reverse engineering or unauthorized manipulation.
+
+Monitoring Scope:
+- Core binaries & modules
+- Execution paths
+- Interpreter validation
+- File system events
+
+Detection Triggers:
+- File relocation outside trusted directories
+- Unauthorized file duplication
+- Execution from non-legitimate paths
+- External interpreter injection
+
+Forensic Tool Detection:
+Wireshark / Procmon / x64dbg / IDA / Ghidra / Process Hacker / TCPView / Autoruns
+
+Tech Stack:
+- watchdog
+- psutil
+- CLI validation
+- Event-driven monitoring
+
+---
+
+###  4. Layered Encryption & Obfuscation Pipeline
+
+[PY Source] → [AES-256 x3] → [Obfuscation] → [Python → C] → [.PYD]
+
+Overview:  
+A multi-stage protection pipeline ensuring payload secrecy and anti-analysis resistance.
+
+Pipeline:
+- Triple AES-256 encryption (distinct keys)
+- Payload fragmentation
+- Full code obfuscation
+- Python-to-C transpilation
+- Compilation to .pyd
+
+Security Advantages:
+- Strong static analysis resistance
+- Increased reverse engineering difficulty
+- Reduced AV/EDR detection surface
+- Fragmented payload recovery complexity
+
+---
+
+###  5. Conditional Execution Safeguards
+
+[Start] → [Scan] → [Score] → [Decision]
+
+Logic:
+- Suspicious → Self-Destruct
+- Safe → Continue Execution
+
+---
+
+###  Final Assessment
+
+CROSSMOS operates as a self-aware, adaptive, and resilient system.
+
+
+---
+
 ##  Relationship with Other Modules
 
 | Module | Role within Architecture |
@@ -237,5 +371,8 @@ The system consists of multiple interconnected modules, each with a defined func
 | syskey.py | High-Value Activity Monitoring |
 | winmon.py | Self-Defense / Tamper Alert |
 | windef.py | Security Recon / EDR Awareness |
+| antivm.pyd |  Advanced Anti-VM & Sandbox Detection Engine |
+| antifile.pyd | Real-Time Integrity & Anti-Tamper Monitoring |
+| delete.ps1 | Self-Destruction / Anti-Analysis |
 
 > Modular RAT framework with **multi-layer defense, surveillance, and persistence logic**.
