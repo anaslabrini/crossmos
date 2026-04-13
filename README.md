@@ -14,7 +14,7 @@ The author takes no responsibility for misuse.
 
 ---
 
-![CROSSMOS Logo](cross.png)
+![CROSSMOS Logo](icon.ico)
 
 ---
 
