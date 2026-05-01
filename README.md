@@ -354,6 +354,10 @@ Logic:
 
 ---
 
+The architecture includes a dedicated system-level component that interfaces with kernel mechanisms through controlled APIs and drivers. This component supports advanced execution control, enhances resilience, and enables deeper visibility into system behavior as part of adversary simulation and security research.
+
+---
+
 ###  Final Assessment
 
 CROSSMOS operates as a self-aware, adaptive, and resilient system.
