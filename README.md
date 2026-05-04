@@ -14,7 +14,7 @@ The author takes no responsibility for misuse.
 
 ---
 
-![CROSSMOS Logo](images/crossmos.png)
+![test](https://upload.wikimedia.org/wikipedia/commons/3/3f/Logo.svg)
 
 ---
 
