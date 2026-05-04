@@ -14,7 +14,7 @@ The author takes no responsibility for misuse.
 
 ---
 
-![crossmos](crossmos.png)
+![CROSSMOS Logo](https://raw.githubusercontent.com/anaslabrini/crossmos/main/crossmos.png)
 
 ---
 
