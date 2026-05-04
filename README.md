@@ -1,4 +1,4 @@
-# 👹 CROSSMOS – USB-Based Red Team Attack Framework
+# CROSSMOS – USB-Based Red Team Attack Framework
 **Author:** Anas Labrini  
 **Category:** Red Team / Adversary Simulation / Malware Research  
 **Language:** C (DigiSpark), PowerShell, Python  
@@ -14,7 +14,7 @@ The author takes no responsibility for misuse.
 
 ---
 
-![CROSSMOS Logo](crossmos.png)
+![CROSSMOS Logo](images/crossmos.png)
 
 ---
 
